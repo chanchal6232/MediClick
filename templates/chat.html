@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediClick | Your AI Medical Assistant</title>
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css')}}"/>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-card">
+            <!-- Header -->
+            <div class="chat-header">
+                <div class="brand-logo">
+                    <i class="fa-solid fa-heart-pulse"></i>
+                </div>
+                <div class="brand-info">
+                    <h4>MediClick</h4>
+                    <p><i class="fa-solid fa-circle" style="color: #4cd137; font-size: 8px; margin-right: 5px;"></i> AI Assistant Online</p>
+                </div>
+            </div>
+
+            <!-- Chat Area -->
+            <div id="messageFormeight" class="chat-messages">
+                <!-- Welcome Message -->
+                <div class="message bot-message">
+                    Hello! I am <strong>MediClick</strong>, your AI medical assistant. How can I help you today?
+                    <span class="msg_time">Just now</span>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="chat-footer">
+                <form id="messageArea">
+                    <input type="text" id="text" name="msg" placeholder="Tell me your symptoms or ask a question..." autocomplete="off" class="type_msg" required/>
+                    <button type="submit" id="send" class="send_btn">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            function getCurrentTime() {
+                const date = new Date();
+                return date.getHours() + ":" + String(date.getMinutes()).padStart(2, '0');
+            }
+
+            $("#messageArea").on("submit", function(event) {
+                event.preventDefault();
+                const str_time = getCurrentTime();
+                var rawText = $("#text").val();
+
+                // User Message
+                var userHtml = `
+                    <div class="message user-message">
+                        ${rawText}
+                        <span class="msg_time">${str_time}</span>
+                    </div>`;
+                
+                $("#text").val("");
+                $("#messageFormeight").append(userHtml);
+                
+                // Scroll to bottom
+                const chatMessages = document.getElementById('messageFormeight');
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                // Typing Indicator
+                var typingHtml = `
+                    <div id="typing" class="typing-indicator">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>`;
+                $("#messageFormeight").append(typingHtml);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                $.ajax({
+                    data: { msg: rawText },
+                    type: "POST",
+                    url: "/get",
+                }).done(function(data) {
+                    $("#typing").remove();
+                    var botHtml = `
+                        <div class="message bot-message">
+                            ${data}
+                            <span class="msg_time">${str_time}</span>
+                        </div>`;
+                    $("#messageFormeight").append(botHtml);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                });
+            });
+        });
+    </script>
+</body>
+</html>
