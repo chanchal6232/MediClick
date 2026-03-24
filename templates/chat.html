@@ -4,35 +4,381 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MediClick | Your AI Medical Assistant</title>
-    <!-- Fonts & Icons -->
+    <!-- Fonts & Icons — same as original -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css')}}"/>
+
+    <style>
+    /* ============================================
+       PURE VISUAL LAYER — no logic changed
+    ============================================ */
+    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Outfit:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+        font-family: 'Outfit', sans-serif;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background: #f0ebe4;
+        position: relative;
+    }
+
+    /* ── Dreamy background ── */
+    body::before {
+        content: '';
+        position: fixed; inset: 0; z-index: 0;
+        background:
+            radial-gradient(ellipse 80% 60% at 15% 10%,  rgba(134,239,172,0.50) 0%, transparent 60%),
+            radial-gradient(ellipse 60% 70% at 88% 82%,  rgba(196,181,253,0.45) 0%, transparent 55%),
+            radial-gradient(ellipse 70% 50% at 58% 28%,  rgba(253,211,170,0.35) 0%, transparent 50%),
+            radial-gradient(ellipse 50% 60% at  8% 85%,  rgba(147,210,255,0.40) 0%, transparent 50%),
+            #f0ebe4;
+        animation: bgBreath 18s ease-in-out infinite alternate;
+    }
+    @keyframes bgBreath {
+        from { filter: hue-rotate(0deg)   brightness(1);    }
+        to   { filter: hue-rotate(8deg)   brightness(1.03); }
+    }
+
+    /* floating blobs */
+    .blob {
+        position: fixed; border-radius: 50%;
+        filter: blur(75px); z-index: 0; pointer-events: none;
+        animation: blobDrift 16s ease-in-out infinite alternate;
+    }
+    .blob1 { width:520px;height:520px; background:rgba(134,239,172,0.22); top:-160px; left:-110px; }
+    .blob2 { width:420px;height:420px; background:rgba(196,181,253,0.20); bottom:-130px; right:-90px; animation-delay:-7s; }
+    .blob3 { width:290px;height:290px; background:rgba(251,191,114,0.18); top:42%; left:54%; animation-delay:-12s; }
+    @keyframes blobDrift {
+        from { transform: translate(0,0)    scale(1)    rotate(0deg); }
+        to   { transform: translate(25px,20px) scale(1.07) rotate(5deg); }
+    }
+
+    /* grain */
+    body::after {
+        content:''; position:fixed; inset:0; z-index:1; pointer-events:none;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+        background-size: 200px 200px; opacity: 0.5;
+    }
+
+    /* ── Card — same id/class hooks untouched ── */
+    .chat-container {
+        position: relative; z-index: 10;
+        display: flex; align-items: center; justify-content: center;
+        width: 100%; height: 100vh;
+    }
+
+    .chat-card {
+        width: 480px;
+        height: 680px;
+        border-radius: 28px;
+        background: rgba(255,255,255,0.72);
+        backdrop-filter: blur(34px) saturate(1.7);
+        -webkit-backdrop-filter: blur(34px) saturate(1.7);
+        border: 1px solid rgba(255,255,255,0.92);
+        box-shadow:
+            0 4px 6px   rgba(0,0,0,0.02),
+            0 12px 40px rgba(0,0,0,0.08),
+            0 40px 80px rgba(0,0,0,0.06),
+            inset 0 1px 0 rgba(255,255,255,0.95);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        animation: cardIn .7s cubic-bezier(.22,1,.36,1) forwards;
+        position: relative;
+    }
+    @keyframes cardIn {
+        from { opacity:0; transform:translateY(28px) scale(0.96); }
+        to   { opacity:1; transform:translateY(0)    scale(1);    }
+    }
+
+    /* rainbow shimmer top edge */
+    .chat-card::before {
+        content: '';
+        position: absolute; top:0; left:0; right:0;
+        height: 2.5px; border-radius: 28px 28px 0 0; z-index: 2;
+        background: linear-gradient(90deg,
+            transparent      0%,
+            rgba(134,239,172,.9) 20%,
+            rgba(99,179,237,.9)  45%,
+            rgba(196,181,253,.9) 70%,
+            rgba(251,191,114,.8) 85%,
+            transparent      100%);
+        background-size: 200% 100%;
+        animation: shimmerMove 4s ease-in-out infinite;
+    }
+    @keyframes shimmerMove {
+        0%,100% { background-position: 0%   50%; opacity:.7; }
+        50%      { background-position: 100% 50%; opacity:1;  }
+    }
+
+    /* ── Header  (id="chat-header" untouched) ── */
+    .chat-header {
+        padding: 20px 22px 16px;
+        border-bottom: 1px solid rgba(0,0,0,0.06);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: rgba(255,255,255,0.50);
+        animation: fadeDown .5s ease .1s both;
+        flex-shrink: 0;
+    }
+    @keyframes fadeDown {
+        from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)}
+    }
+
+    /* spinning ring around logo */
+    .brand-logo {
+        position: relative;
+        width: 48px; height: 48px; flex-shrink: 0;
+    }
+    .brand-logo::before {
+        content: '';
+        position: absolute; inset: -3px;
+        border-radius: 50%;
+        background: conic-gradient(
+            rgba(134,239,172,1)  0deg,
+            rgba(99,179,237,1)  120deg,
+            rgba(196,181,253,1) 240deg,
+            rgba(134,239,172,1) 360deg
+        );
+        animation: spin 6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .brand-logo::after {
+        content: '';
+        position: absolute; inset: -1px;
+        background: rgba(255,255,255,0.9);
+        border-radius: 50%;
+    }
+    .brand-logo i {
+        position: absolute; inset: 0; z-index: 2;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #4ade80, #38bdf8);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 20px; color: #fff;
+        box-shadow: 0 4px 16px rgba(74,222,128,0.35);
+    }
+    /* center the FA icon inside */
+    .brand-logo i { display:flex; align-items:center; justify-content:center; }
+
+    .brand-info h4 {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 22px; font-weight: 600;
+        color: #1a1a2e; letter-spacing: -.3px;
+        line-height: 1;
+    }
+    .brand-info p {
+        font-size: 12px; font-weight: 500;
+        color: #16a34a; margin-top: 4px;
+        display: flex; align-items: center; gap: 5px;
+    }
+    /* override FA circle with live pulse */
+    .brand-info p .fa-circle {
+        width: 7px; height: 7px; border-radius: 50%;
+        background: #22c55e;
+        box-shadow: 0 0 0 2px rgba(34,197,94,.2);
+        animation: livePulse 2s ease-in-out infinite;
+        font-size: 0 !important; /* hide FA glyph, show box */
+        display: inline-block;
+    }
+    @keyframes livePulse {
+        0%,100%{box-shadow:0 0 0 2px rgba(34,197,94,.2)}
+        50%    {box-shadow:0 0 0 5px rgba(34,197,94,.1)}
+    }
+
+    /* ── Messages — id="messageFormeight" kept ── */
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px 18px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        scroll-behavior: smooth;
+    }
+    .chat-messages::-webkit-scrollbar { width: 4px; }
+    .chat-messages::-webkit-scrollbar-track { background: transparent; }
+    .chat-messages::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.10); border-radius: 2px; }
+
+    /* ── Message bubbles — class="message bot-message / user-message" kept ── */
+    .message {
+        max-width: 82%;
+        padding: 12px 16px;
+        border-radius: 18px;
+        font-size: 14px;
+        line-height: 1.65;
+        position: relative;
+        word-break: break-word;
+        animation: msgIn .35s cubic-bezier(.22,1,.36,1) both;
+    }
+    @keyframes msgIn {
+        from { opacity:0; transform:translateY(8px) scale(.98); }
+        to   { opacity:1; transform:translateY(0)   scale(1);   }
+    }
+
+    .bot-message {
+        align-self: flex-start;
+        background: rgba(255,255,255,0.88);
+        border: 1px solid rgba(0,0,0,0.07);
+        color: #1e293b;
+        border-bottom-left-radius: 5px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+
+    .user-message {
+        align-self: flex-end;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: #fff;
+        border-bottom-right-radius: 5px;
+        box-shadow: 0 4px 18px rgba(99,102,241,0.35);
+    }
+
+    /* msg_time — class="msg_time" kept */
+    .msg_time {
+        display: block;
+        font-size: 10px;
+        margin-top: 5px;
+        opacity: .55;
+        font-family: 'DM Mono', monospace;
+    }
+    .bot-message  .msg_time { color: #475569; }
+    .user-message .msg_time { color: rgba(255,255,255,.8); }
+
+    /* ── Typing indicator — id="typing", class="typing-indicator / dot" kept ── */
+    .typing-indicator {
+        align-self: flex-start;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 14px 18px;
+        background: rgba(255,255,255,0.88);
+        border: 1px solid rgba(0,0,0,0.07);
+        border-radius: 18px;
+        border-bottom-left-radius: 5px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .dot {
+        width: 7px; height: 7px; border-radius: 50%;
+        background: linear-gradient(135deg, #4ade80, #38bdf8);
+        animation: typeDot 1.1s infinite;
+    }
+    .dot:nth-child(2) { animation-delay: .18s; }
+    .dot:nth-child(3) { animation-delay: .36s; }
+    @keyframes typeDot {
+        0%,80%,100% { transform:scale(.5); opacity:.4; }
+        40%          { transform:scale(1);  opacity:1;  }
+    }
+
+    /* ── Footer / form — id="messageArea" kept ── */
+    .chat-footer {
+        padding: 12px 16px 18px;
+        border-top: 1px solid rgba(0,0,0,0.06);
+        background: rgba(255,255,255,0.50);
+        flex-shrink: 0;
+        animation: fadeUp .5s ease .2s both;
+    }
+    @keyframes fadeUp {
+        from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)}
+    }
+
+    #messageArea {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        background: rgba(255,255,255,0.92);
+        border: 1.5px solid rgba(0,0,0,0.09);
+        border-radius: 18px;
+        padding: 10px 10px 10px 16px;
+        transition: border-color .25s, box-shadow .25s;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    #messageArea:focus-within {
+        border-color: rgba(99,102,241,0.40);
+        box-shadow:
+            0 0 0 4px rgba(99,102,241,0.08),
+            0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    /* input — id="text", class="type_msg" kept */
+    .type_msg {
+        flex: 1;
+        border: none;
+        background: transparent;
+        outline: none;
+        font-family: 'Outfit', sans-serif;
+        font-size: 14px;
+        color: #1e293b;
+        line-height: 1.5;
+    }
+    .type_msg::placeholder { color: #94a3b8; }
+
+    /* send button — id="send", class="send_btn" kept */
+    .send_btn {
+        width: 38px; height: 38px;
+        border-radius: 12px;
+        border: none; flex-shrink: 0;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: #fff;
+        font-size: 15px;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 3px 14px rgba(99,102,241,0.40);
+        transition: transform .2s, box-shadow .2s;
+    }
+    .send_btn:hover {
+        transform: scale(1.08) translateY(-1px);
+        box-shadow: 0 6px 20px rgba(99,102,241,0.50);
+    }
+    .send_btn:active { transform: scale(0.94); }
+
+    /* footer note */
+    .footer-note {
+        text-align: center;
+        margin-top: 9px;
+        font-size: 10px;
+        color: #94a3b8;
+        letter-spacing: .2px;
+    }
+    .footer-note span { color: #a78bfa; }
+    </style>
 </head>
 <body>
+
+    <!-- background blobs -->
+    <div class="blob blob1"></div>
+    <div class="blob blob2"></div>
+    <div class="blob blob3"></div>
+
     <div class="chat-container">
         <div class="chat-card">
-            <!-- Header -->
+
+            <!-- Header — UNCHANGED structure -->
             <div class="chat-header">
                 <div class="brand-logo">
                     <i class="fa-solid fa-heart-pulse"></i>
                 </div>
                 <div class="brand-info">
                     <h4>MediClick</h4>
-                    <p><i class="fa-solid fa-circle" style="color: #4cd137; font-size: 8px; margin-right: 5px;"></i> AI Assistant Online</p>
+                    <p><i class="fa-solid fa-circle" style="font-size: 8px; margin-right: 5px;"></i> AI Assistant Online</p>
                 </div>
             </div>
 
-            <!-- Chat Area -->
+            <!-- Chat Area — UNCHANGED id -->
             <div id="messageFormeight" class="chat-messages">
-                <!-- Welcome Message -->
+                <!-- Welcome Message — UNCHANGED class -->
                 <div class="message bot-message">
                     Hello! I am <strong>MediClick</strong>, your AI medical assistant. How can I help you today?
                     <span class="msg_time">Just now</span>
                 </div>
             </div>
 
-            <!-- Input Area -->
+            <!-- Input Area — UNCHANGED ids/classes/form -->
             <div class="chat-footer">
                 <form id="messageArea">
                     <input type="text" id="text" name="msg" placeholder="Tell me your symptoms or ask a question..." autocomplete="off" class="type_msg" required/>
@@ -40,10 +386,18 @@
                         <i class="fa-solid fa-paper-plane"></i>
                     </button>
                 </form>
+                <div class="footer-note">Powered by <span>RAG · Pinecone · Claude 3 Haiku</span> — Not a substitute for professional advice</div>
             </div>
+
         </div>
     </div>
 
+    <!-- ══════════════════════════════════════════
+         ORIGINAL JAVASCRIPT — ZERO CHANGES
+         All IDs: #messageArea, #text, #typing,
+         #messageFormeight, #send
+         URL: /get   Method: POST   same as original
+    ══════════════════════════════════════════ -->
     <script>
         $(document).ready(function() {
             function getCurrentTime() {
@@ -97,5 +451,6 @@
             });
         });
     </script>
+
 </body>
 </html>
